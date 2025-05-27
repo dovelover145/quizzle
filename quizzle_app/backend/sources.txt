@@ -1,0 +1,7 @@
+AI:
+    -Building schema
+    -Validating user input along with HTTP error codes (e.g. 200, 400 etc.)
+
+Some from the Internet:
+    -https://pymongo.readthedocs.io/en/stable/tutorial.html
+    -https://stackoverflow.com/questions/12064764/pymongo-query-on-list-field-and-or
