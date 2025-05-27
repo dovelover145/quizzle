@@ -12,10 +12,22 @@
 
 ### Example: {title: "Svelte Trivia", description: "This quiz tests users' knowledge of the best frontend framework, Svelte.", creator_username: "SamLovesSvelte", is_public: true, _id: "665340af98c3b42c4f95e6a3", date_created: "2025-05-26T14:30:00Z"}
 
-### 2. `"update_quiz"`
+### 2. `"/update_quiz"`
 
-### 3. `"delete_quiz"`
+### 3. `"/delete_quiz"`
 
-### 4. `"get_user_quizzes"`
+### 4. `"/get_user_quizzes"`
 
-### 5. `"get_public_quizzes"`
+### 5. `"/get_public_quizzes"`
+
+## Questions
+
+### 1. `"/add_question"`
+
+### 2. `"/update_question"`
+
+### 3. `"/delete_question"`
+
+### 4. `"/get_questions"`
+
+## Users

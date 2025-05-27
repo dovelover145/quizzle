@@ -32,7 +32,7 @@ oauth.register(
 )
 
 # MongoDB connection
-mongo_uri = os.getenv("MONGO_URI")
+mongo_uri = os.getenv("MONGO_URI", "mongodb://$root:rootpassword@mongo:27017/mydatabase?authSource=admin")
 mongo = MongoClient(mongo_uri)
 db = mongo.get_default_database()
 
@@ -229,6 +229,121 @@ def get_user_quizzes():
 def get_public_quizzes():
     public_quizzes = list(db.quizzes.find({"is_public": True}).sort("_id", DESCENDING))
     return jsonify({"success": True, "public_quizzes": public_quizzes})
+
+
+
+
+
+
+@app.route("/add_question", methods=["POST"])
+def add_question():
+    request_object = request.get_json()
+    request_object_fields = {
+        "quiz_id": str,
+        "question": str,
+        "answers": list(str),
+        "correct_answer": str,
+        "explanation": str
+    }
+    message = _validate_request_object(request_object, request_object_fields)
+    if message:
+        return jsonify({"success": False, "message": message}), 400
+    try:
+        quiz_id = ObjectId(request_object.get("quiz_id"))
+    except Exception as _:
+        message = "Field 'quiz_id' is invalid"
+        return jsonify({"success": False, "message": message}), 400
+    if not list(db.quizzes.find({"_id": quiz_id})):
+        message = "Field 'quiz_id' doesn't exist"
+        return jsonify({"success": False, "message": message}), 404
+    request_object["_id"] = str(db.questions.insert_one(request_object).inserted_id)
+    return jsonify({"success": True, "quiz": request_object}), 201
+
+
+
+
+
+
+@app.route("/update_question", methods=["POST"])
+def update_question():
+    request_object = request.get_json()
+    request_object_fields = {
+        "quiz_id": str,
+        "question": str,
+        "answers": list(str),
+        "correct_answer": str,
+        "explanation": str,
+        "_id": str
+    }
+    message = _validate_request_object(request_object, request_object_fields)
+    if message:
+        return jsonify({"success": False, "message": message}), 400
+    try:
+        _id = ObjectId(request_object.get("_id"))
+    except Exception as _:
+        message = "Field '_id' is invalid"
+        return jsonify({"success": False, "message": message}), 400
+    result = db.questions.update_one(
+        {"_id": _id},
+        {"$set": {"question": request_object.get("question"), "answers": request_object.get("answers"), "correct_answer": request_object.get("correct_answer"), "explanation": request_object.get("explanation")}}
+    )
+    if result.matched_count == 0:
+        message = "Record not found"
+        return jsonify({"success": False, "message": message}), 404 # 404 means not found
+    message = "Successful update"
+    return jsonify({"success": True, "message": message}), 200
+
+
+
+
+
+
+@app.route("/delete_question", methods=["POST"])
+def delete_question():
+    request_object = request.get_json()
+    request_object_fields = {
+        "quiz_id": str,
+        "question": str,
+        "answers": list,
+        "correct_answer": str,
+        "explanation": str,
+        "_id": str
+    }
+    message = _validate_request_object(request_object, request_object_fields)
+    if message:
+        return jsonify({"success": False, "message": message}), 400
+    try:
+        _id = ObjectId(request_object.get("_id"))
+    except Exception as _:
+        message = "Field '_id' is invalid"
+        return jsonify({"success": False, "message": message}), 400
+    result = db.questions.delete_one({"_id": _id})
+    if result.deleted_count == 0:
+        message = "Record not found"
+        return jsonify({"success": False, "message": message}), 404
+    return jsonify({"success": True, "message": message}), 200
+
+
+
+
+
+
+@app.route("/get_questions", methods=["POST"])
+def get_questions():
+    request_object = request.get_json()
+    request_object_fields = {
+        "quiz_id": str,
+    }
+    message = _validate_request_object(request_object, request_object_fields)
+    if message:
+        return jsonify({"success": False, "message": message}), 400
+    try:
+        quiz_id = ObjectId(request_object.get("quiz_id"))
+    except Exception as _:
+        message = "Field 'quiz_id' is invalid"
+        return jsonify({"success": False, "message": message}), 400
+    questions = list(db.questions.find({"quiz_id": quiz_id}).sort("_id", DESCENDING))
+    return jsonify({"success": True, "questions": questions})
 
 
 
