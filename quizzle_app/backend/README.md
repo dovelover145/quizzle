@@ -31,3 +31,11 @@
 ### 4. `"/get_questions"`
 
 ## Users
+
+### 1. `"/add_user"`
+
+### 2. `"/update_user"`
+
+### 3. `"/delete_user"`
+
+### 4. `"/get_user"`

@@ -177,11 +177,6 @@ def update_quiz():
 def delete_quiz():
     request_object = request.get_json()
     request_object_fields = {
-        "title": str,
-        "description": str,
-        "creator_username": str,
-        "is_public": bool,
-        "date_created": str,
         "_id": str
     }
     message = _validate_request_object(request_object, request_object_fields)
@@ -302,11 +297,6 @@ def update_question():
 def delete_question():
     request_object = request.get_json()
     request_object_fields = {
-        "quiz_id": str,
-        "question": str,
-        "answers": list,
-        "correct_answer": str,
-        "explanation": str,
         "_id": str
     }
     message = _validate_request_object(request_object, request_object_fields)
@@ -344,6 +334,110 @@ def get_questions():
         return jsonify({"success": False, "message": message}), 400
     questions = list(db.questions.find({"quiz_id": quiz_id}).sort("_id", DESCENDING))
     return jsonify({"success": True, "questions": questions})
+
+
+
+
+
+
+@app.route("/add_user", methods=["POST"])
+def add_user():
+    request_object = request.get_json()
+    request_object_fields = {
+        "username": str,
+        "email": str,
+        "score_history": list,
+    }
+    message = _validate_request_object(request_object, request_object_fields)
+    if message:
+        return jsonify({"success": False, "message": message}), 400
+    if list(db.users.find({"username": request_object.get("username")})):
+        message = "Field 'username' already exists"
+        return jsonify({"success": False, "message": message}), 400
+    request_object["_id"] = str(db.users.insert_one(request_object).inserted_id)
+    return jsonify({"success": True, "quiz": request_object}), 201
+
+
+
+
+
+
+@app.route("/update_user", methods=["POST"])
+def update_user():
+    request_object = request.get_json()
+    request_object_fields = {
+        "username": str,
+        "email": str,
+        "score_history": list,
+        "_id": str
+    }
+    message = _validate_request_object(request_object, request_object_fields)
+    if message:
+        return jsonify({"success": False, "message": message}), 400
+    try:
+        _id = ObjectId(request_object.get("_id"))
+    except Exception as _:
+        message = "Field '_id' is invalid"
+        return jsonify({"success": False, "message": message}), 400
+    result = db.users.update_one(
+        {"_id": _id},
+        {"$set": {"score_history": request_object.get("score_history")}}
+    )
+    if result.matched_count == 0:
+        message = "Record not found"
+        return jsonify({"success": False, "message": message}), 404 # 404 means not found
+    message = "Successful update"
+    return jsonify({"success": True, "message": message}), 200
+
+
+
+
+
+
+@app.route("/delete_user", methods=["POST"])
+def delete_user():
+    request_object = request.get_json()
+    request_object_fields = {
+        "_id": str
+    }
+    message = _validate_request_object(request_object, request_object_fields)
+    if message:
+        return jsonify({"success": False, "message": message}), 400
+    try:
+        _id = ObjectId(request_object.get("_id"))
+    except Exception as _:
+        message = "Field '_id' is invalid"
+        return jsonify({"success": False, "message": message}), 400
+    result = db.users.delete_one({"_id": _id})
+    if result.deleted_count == 0:
+        message = "Record not found"
+        return jsonify({"success": False, "message": message}), 404
+    return jsonify({"success": True, "message": message}), 200
+
+
+
+
+
+
+@app.route("/get_user", methods=["POST"])
+def get_user():
+    request_object = request.get_json()
+    request_object_fields = {
+        "_id": str,
+    }
+    message = _validate_request_object(request_object, request_object_fields)
+    if message:
+        return jsonify({"success": False, "message": message}), 400
+    try:
+        _id = ObjectId(request_object.get("_id"))
+    except Exception as _:
+        message = "Field '_id' is invalid"
+        return jsonify({"success": False, "message": message}), 400
+    user = db.users.find_one({"_id": _id})
+    if not user:
+        message = "Record not found"
+        return jsonify({"success": False, "message": message}), 404
+    return jsonify({"success": True, "user": user})
 
 
 
