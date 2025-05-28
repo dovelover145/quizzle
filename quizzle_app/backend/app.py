@@ -87,12 +87,12 @@ def logout():
 
 
 
-@app.route("/get_user")
-def user():
+@app.route("/user_info")
+def user_info():
     user = session.get("user")
     if user:
-        return jsonify({"username": user["email"], "valid": True})
-    return jsonify({"username": "", "valid": False})
+        return jsonify({"success": True, "user": user}), 200
+    return jsonify({"success": False, "message": "No user is logged in"}), 400
 
 
 
@@ -191,7 +191,7 @@ def delete_quiz():
     if result.deleted_count == 0:
         message = "Record not found"
         return jsonify({"success": False, "message": message}), 404
-    _ = db.questions.delete_many({"quiz_id": _id}) # It doesn't matter how many questions are deleted, as the quiz could have a variable amount (even 0)
+    _ = db.questions.delete_many({"quiz_id": str(_id)}) # It doesn't matter how many questions are deleted, as the quiz could have a variable amount (even 0)
     message = "Successful delete"
     return jsonify({"success": True, "message": message}), 200
 
@@ -237,7 +237,7 @@ def get_public_quizzes():
 
 
 @app.route("/add_question", methods=["POST"])
-def add_question():
+def add_question(): # Can check the list more vigorously in the future
     request_object = request.get_json()
     request_object_fields = {
         "quiz_id": str,
@@ -258,7 +258,7 @@ def add_question():
         message = "Field 'quiz_id' doesn't exist"
         return jsonify({"success": False, "message": message}), 404
     request_object["_id"] = str(db.questions.insert_one(request_object).inserted_id)
-    return jsonify({"success": True, "quiz": request_object}), 201
+    return jsonify({"success": True, "question": request_object}), 201
 
 
 
@@ -339,6 +339,8 @@ def get_questions():
         message = "Field 'quiz_id' is invalid"
         return jsonify({"success": False, "message": message}), 400
     questions = list(db.questions.find({"quiz_id": quiz_id}).sort("_id", DESCENDING))
+    for question in questions:
+        question["_id"] = str(question["_id"])
     return jsonify({"success": True, "questions": questions})
 
 
@@ -440,6 +442,7 @@ def get_user():
         message = "Field '_id' is invalid"
         return jsonify({"success": False, "message": message}), 400
     user = db.users.find_one({"_id": _id})
+    user["_id"] = str(user["_id"])
     if not user:
         message = "Record not found"
         return jsonify({"success": False, "message": message}), 404
