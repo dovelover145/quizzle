@@ -211,8 +211,12 @@ def get_user_quizzes():
         return jsonify({"success": False, "message": message}), 400
     public_quizzes = list(db.quizzes.find({"$and": [{"creator_username": request_object.get("creator_username")}, 
                                    {"is_public": True}]}).sort("_id", DESCENDING))
+    for public_quiz in public_quizzes: # Convert ObjectID to str
+        public_quiz["_id"] = str(public_quiz["_id"])
     private_quizzes = list(db.quizzes.find({"$and": [{"creator_username": request_object.get("creator_username")}, 
                                    {"is_public": False}]}).sort("_id", DESCENDING))
+    for private_quiz in private_quizzes: # Same thing here
+        private_quiz["_id"] = str(private_quiz["_id"])
     return jsonify({"success": True, "public_quizzes": public_quizzes, "private_quizzes": private_quizzes})
 
 
@@ -223,6 +227,8 @@ def get_user_quizzes():
 @app.route("/get_public_quizzes")
 def get_public_quizzes():
     public_quizzes = list(db.quizzes.find({"is_public": True}).sort("_id", DESCENDING))
+    for public_quiz in public_quizzes:
+        public_quiz["_id"] = str(public_quiz["_id"])
     return jsonify({"success": True, "public_quizzes": public_quizzes})
 
 
