@@ -32,7 +32,7 @@ oauth.register(
 )
 
 # MongoDB connection
-mongo_uri = os.getenv("MONGO_URI", "mongodb://$root:rootpassword@mongo:27017/mydatabase?authSource=admin")
+mongo_uri = os.getenv("MONGO_URI", "mongodb://root:rootpassword@localhost:27017/mydatabase?authSource=admin") # Second is for testing
 mongo = MongoClient(mongo_uri)
 db = mongo.get_default_database()
 
@@ -100,15 +100,15 @@ def user():
 
 
 def _validate_request_object(request_object, request_object_fields):
-    if not isinstance(request_object, dict): # The request_object must be a dictionary (i.e. in JSON)
-        return "Failed to receive request"
-    if len(request_object) != len(request_object_fields): # The request_object must have this many fields; no more, no less
-        return f"Request needs {len(request_object_fields)} fields"
-    for request_object_field, request_object_field_type in request_object_fields.items(): # The request_object must have these fields, and they must be of these types
+    if not isinstance(request_object, dict): # The request must be received as a dictionary (from JSON)
+        return "Request must be in JSON"
+    if len(request_object) != len(request_object_fields): # The request must have this many fields; no more, no less
+        return f"Request needs {len(request_object_fields)} fields exactly"
+    for request_object_field, request_object_field_type in request_object_fields.items(): # The request must have these fields, and they must be of these types
         if request_object_field not in request_object:
             return f"Request missing field '{request_object_field}'"
         if not isinstance(request_object[request_object_field], request_object_field_type):
-            return f"Field '{request_object_field}' supposed to be a {request_object_field_type.__name__}"
+            return f"Field '{request_object_field}' is supposed to be a {request_object_field_type.__name__}"
     return "" # Successful parsing
 
 
@@ -236,7 +236,7 @@ def add_question():
     request_object_fields = {
         "quiz_id": str,
         "question": str,
-        "answers": list(str),
+        "answers": list,
         "correct_answer": str,
         "explanation": str
     }

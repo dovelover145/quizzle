@@ -3,8 +3,10 @@
 
 node_modules/
 
+.conda/
 __pycache__/
 .pytest_cache/
-.conda/
+.coverage
+htmlcov/
 
 .DS_Store

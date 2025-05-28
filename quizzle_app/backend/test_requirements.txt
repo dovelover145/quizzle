@@ -1,4 +1,4 @@
-# This is for the pytest environment
+# This is for the testing environment
 Flask==2.3.2
 Werkzeug==2.3.8
 python-dotenv==1.0.0
@@ -7,3 +7,4 @@ pymongo==4.13.0
 authlib
 requests
 pytest==8.3.5
+pytest-cov
