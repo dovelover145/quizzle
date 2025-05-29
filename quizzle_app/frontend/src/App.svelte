@@ -18,47 +18,23 @@
 </script>
 
 <main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
+  <header>
+    <div class="header-left">
+      <h1 class="logo">Quiz App</h1>
+    </div>
+    <button class="login-btn">Log in</button>
+  </header>
 
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Your API Key: <strong>{apiKey}</strong>
-  </p>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
+  <section class="hero">
+    <div class="hero-content">
+      <h2 class="hero-title">
+        Studying made <span class="highlight">easy</span> with Quiz App!
+      </h2>
+      <button class="cta-btn">Create now</button>
+    </div>
+  </section>
 </main>
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
-  }
+  
 </style>
