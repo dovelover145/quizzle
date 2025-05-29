@@ -271,7 +271,7 @@ def update_question():
     request_object_fields = {
         "quiz_id": str,
         "question": str,
-        "answers": list(str),
+        "answers": list,
         "correct_answer": str,
         "explanation": str,
         "_id": str
@@ -317,6 +317,7 @@ def delete_question():
     if result.deleted_count == 0:
         message = "Record not found"
         return jsonify({"success": False, "message": message}), 404
+    message = "Successful delete"
     return jsonify({"success": True, "message": message}), 200
 
 
@@ -338,7 +339,7 @@ def get_questions():
     except Exception as _:
         message = "Field 'quiz_id' is invalid"
         return jsonify({"success": False, "message": message}), 400
-    questions = list(db.questions.find({"quiz_id": quiz_id}).sort("_id", DESCENDING))
+    questions = list(db.questions.find({"quiz_id": str(quiz_id)}).sort("_id", DESCENDING))
     for question in questions:
         question["_id"] = str(question["_id"])
     return jsonify({"success": True, "questions": questions})

@@ -263,6 +263,190 @@ def test_add_question(test_client):
     assert question.get("explanation") == "Yes is the right answer."
     assert isinstance(question.get("_id"), str)
 
+    response = test_client.post("/add_question", json={
+        "quiz_id": "",
+        "question": "Who?",
+        "answers": ["Yes"],
+        "correct_answer": "Yes",
+        "explanation": "Yes is the right answer."
+    })
+    assert response.status_code == 400
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    question = response_object.get("message") == "Field 'quiz_id' is invalid"
+
+    response = test_client.post("/add_question", json={
+        "quiz_id": "6569f84b0c8b0f15c7a4f8b3",
+        "question": "Who?",
+        "answers": ["Yes"],
+        "correct_answer": "Yes",
+        "explanation": "Yes is the right answer."
+    })
+    assert response.status_code == 404
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    question = response_object.get("message") == "Field 'quiz_id' doesn't exist"
+
+    # Cleanup (implicit testing also with questions getting automatically deleted)
+    _ = test_client.post("/delete_quiz", json={
+        "_id": quiz.get("_id")
+    })
+
+
+
+
+
+
+def test_update_question(test_client):
+    response = test_client.post("/create_quiz", json={
+        "title": "Testing",
+        "description": "Testing is important.",
+        "creator_username": "tester",
+        "is_public": True
+    })
+    quiz = response.get_json().get("quiz")
+    response = test_client.post("/add_question", json={
+        "quiz_id": quiz.get("_id"),
+        "question": "Who?",
+        "answers": ["Yes"],
+        "correct_answer": "Yes",
+        "explanation": "Yes is the right answer."
+    })
+    question = response.get_json().get("question")
+    
+    question["explanation"] = "Yes is the answer!!!"
+    response = test_client.post("/update_question", json=question)
+    assert response.status_code == 200
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == True
+    assert response_object.get("message") == "Successful update"
+
+    question["_id"] = ""
+    response = test_client.post("/update_question", json=question)
+    assert response.status_code == 400
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Field '_id' is invalid"
+
+    question["_id"] = "6569f84b0c8b0f15c7a4f8b3"
+    response = test_client.post("/update_question", json=question)
+    assert response.status_code == 404
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Record not found"
+
+    # Cleanup (implicit testing also with questions getting automatically deleted)
+    _ = test_client.post("/delete_quiz", json={
+        "_id": quiz.get("_id")
+    })
+
+
+
+
+
+
+def test_delete_question(test_client):
+    response = test_client.post("/create_quiz", json={
+        "title": "Testing",
+        "description": "Testing is important.",
+        "creator_username": "tester",
+        "is_public": True
+    })
+    quiz = response.get_json().get("quiz")
+    response = test_client.post("/add_question", json={
+        "quiz_id": quiz.get("_id"),
+        "question": "Who?",
+        "answers": ["Yes"],
+        "correct_answer": "Yes",
+        "explanation": "Yes is the right answer."
+    })
+    question = response.get_json().get("question")
+
+    response = test_client.post("/delete_question", json={
+        "_id": question.get("_id")
+    })
+    assert response.status_code == 200
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == True
+    assert response_object.get("message") == "Successful delete"
+    
+    response = test_client.post("/delete_question", json={
+        "_id": ""
+    })
+    assert response.status_code == 400
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Field '_id' is invalid"
+
+    response = test_client.post("/delete_question", json={
+        "_id": question.get("_id")
+    })
+    assert response.status_code == 404
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Record not found"
+
+    # Cleanup (implicit testing also with questions getting automatically deleted)
+    _ = test_client.post("/delete_quiz", json={
+        "_id": quiz.get("_id")
+    })
+
+
+
+
+
+
+def test_get_questions(test_client):
+    response = test_client.post("/create_quiz", json={
+        "title": "Testing",
+        "description": "Testing is important.",
+        "creator_username": "tester",
+        "is_public": True
+    })
+    quiz = response.get_json().get("quiz")
+    response = test_client.post("/add_question", json={
+        "quiz_id": quiz.get("_id"),
+        "question": "Who?",
+        "answers": ["Yes"],
+        "correct_answer": "Yes",
+        "explanation": "Yes is the right answer."
+    })
+    
+    response = test_client.post("/get_questions", json={
+        "quiz_id": quiz.get("_id")
+    })
+    assert response.status_code == 200
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == True
+    assert len(response_object.get("questions")) == 1
+
+    response = test_client.post("/get_questions", json={
+        "quiz_id": ""
+    })
+    assert response.status_code == 400
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Field 'quiz_id' is invalid"
+
+    response = test_client.post("/get_questions", json={
+        "quiz_id": "6569f84b0c8b0f15c7a4f8b3"
+    })
+    assert response.status_code == 200
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == True
+    assert len(response_object.get("questions")) == 0
+
     # Cleanup (implicit testing also with questions getting automatically deleted)
     _ = test_client.post("/delete_quiz", json={
         "_id": quiz.get("_id")
