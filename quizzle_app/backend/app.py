@@ -53,11 +53,12 @@ def home(): # Basically discarded this
 
 
 
-@app.route("/login")
+@app.route('/login')
 def login():
-    session["nonce"] = nonce
-    redirect_uri = "http://localhost:8000/authorize"
-    return oauth.flask_app.authorize_redirect(redirect_uri, nonce=nonce)
+    session['nonce'] = nonce
+    redirect_uri = 'http://localhost:8000/authorize'
+    client = oauth.create_client(os.getenv("OIDC_CLIENT_NAME"))
+    return client.authorize_redirect(redirect_uri, nonce=nonce)
 
 
 
