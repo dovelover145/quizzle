@@ -364,7 +364,7 @@ def add_user():
         message = "Field 'username' already exists"
         return jsonify({"success": False, "message": message}), 400
     request_object["_id"] = str(db.users.insert_one(request_object).inserted_id)
-    return jsonify({"success": True, "quiz": request_object}), 201
+    return jsonify({"success": True, "user": request_object}), 201
 
 
 
@@ -394,7 +394,7 @@ def update_user():
     )
     if result.matched_count == 0:
         message = "Record not found"
-        return jsonify({"success": False, "message": message}), 404 # 404 means not found
+        return jsonify({"success": False, "message": message}), 404
     message = "Successful update"
     return jsonify({"success": True, "message": message}), 200
 
@@ -421,6 +421,7 @@ def delete_user():
     if result.deleted_count == 0:
         message = "Record not found"
         return jsonify({"success": False, "message": message}), 404
+    message = "Successful delete"
     return jsonify({"success": True, "message": message}), 200
 
 
@@ -443,10 +444,10 @@ def get_user():
         message = "Field '_id' is invalid"
         return jsonify({"success": False, "message": message}), 400
     user = db.users.find_one({"_id": _id})
-    user["_id"] = str(user["_id"])
     if not user:
         message = "Record not found"
         return jsonify({"success": False, "message": message}), 404
+    user["_id"] = str(user["_id"])
     return jsonify({"success": True, "user": user})
 
 

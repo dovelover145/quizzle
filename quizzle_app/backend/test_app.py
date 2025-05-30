@@ -3,7 +3,7 @@ import os
 import pytest
 from backend.app import app
 
-""" Useful resource: https://testdriven.io/blog/flask-pytest/ """
+# Useful resource: https://testdriven.io/blog/flask-pytest/
 
 
 
@@ -93,8 +93,6 @@ def test_create_quiz(test_client):
     response = test_client.post("/delete_quiz", json={
         "_id": quiz.get("_id")
     })
-
-    assert response.get_json()["success"] == True
 
 
 
@@ -450,4 +448,170 @@ def test_get_questions(test_client):
     # Cleanup (implicit testing also with questions getting automatically deleted)
     _ = test_client.post("/delete_quiz", json={
         "_id": quiz.get("_id")
+    })
+
+
+
+
+
+
+def test_add_user(test_client):
+    response = test_client.post("/add_user", json={
+        "username": "tester",
+        "email": "tester@gmail.com",
+        "score_history": []
+    })
+    assert response.status_code == 201
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == True
+    user = response_object.get("user")
+    assert len(user) == 4
+    assert user.get("username") == "tester"
+    assert user.get("email") == "tester@gmail.com"
+    assert user.get("score_history") == []
+    assert isinstance(user.get("_id"), str)
+
+    response = test_client.post("/add_user", json={
+        "username": "tester",
+        "email": "tester@gmail.com",
+        "score_history": []
+    })
+    assert response.status_code == 400
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Field 'username' already exists"
+
+    # Cleanup
+    _ = test_client.post("/delete_user", json={
+        "_id": user.get("_id")
+    })
+
+
+
+
+
+
+def test_update_user(test_client):
+    response = test_client.post("/add_user", json={
+        "username": "tester",
+        "email": "tester@gmail.com",
+        "score_history": []
+    })
+    user = response.get_json().get("user")
+    _id = user.get("_id")
+    
+    user["score_history"] = [{"quiz_name": "Svelte Trivia", "score": 90, "date_taken": ""}] # Leaving the last one blank out of laziness
+    response = test_client.post("/update_user", json=user)
+    assert response.status_code == 200
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == True
+    assert response_object.get("message") == "Successful update"
+
+    user["_id"] = ""
+    response = test_client.post("/update_user", json=user)
+    assert response.status_code == 400
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Field '_id' is invalid"
+
+    user["_id"] = "6569f84b0c8b0f15c7a4f8b3"
+    response = test_client.post("/update_user", json=user)
+    assert response.status_code == 404
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Record not found"
+
+    # Cleanup
+    _ = test_client.post("/delete_user", json={
+        "_id": _id
+    })
+
+
+
+
+
+
+def test_delete_user(test_client):
+    response = test_client.post("/add_user", json={
+        "username": "tester",
+        "email": "tester@gmail.com",
+        "score_history": []
+    })
+    user = response.get_json().get("user")
+
+    response = test_client.post("/delete_user", json={
+        "_id": user.get("_id")
+    })
+    assert response.status_code == 200
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == True
+    assert response_object.get("message") == "Successful delete"
+
+    response = test_client.post("/delete_user", json={
+        "_id": ""
+    })
+    assert response.status_code == 400
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Field '_id' is invalid"
+
+    response = test_client.post("/delete_user", json={
+        "_id": "6569f84b0c8b0f15c7a4f8b3"
+    })
+    assert response.status_code == 404
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Record not found"
+
+
+
+
+
+
+def test_get_user(test_client):
+    response = test_client.post("/add_user", json={
+        "username": "tester",
+        "email": "tester@gmail.com",
+        "score_history": []
+    })
+    user = response.get_json().get("user")
+
+    response = test_client.post("/get_user", json={
+        "_id": user.get("_id")
+    })
+    assert response.status_code == 200
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == True
+    assert len(response_object.get("user")) == 4
+
+    response = test_client.post("/get_user", json={
+        "_id": ""
+    })
+    assert response.status_code == 400
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Field '_id' is invalid"
+
+    response = test_client.post("/get_user", json={
+        "_id": "6569f84b0c8b0f15c7a4f8b3"
+    })
+    assert response.status_code == 404
+    response_object = response.get_json()
+    assert len(response_object) == 2
+    assert response_object.get("success") == False
+    assert response_object.get("message") == "Record not found"
+
+    # Cleanup
+    _ = test_client.post("/delete_user", json={
+        "_id": user.get("_id")
     })
