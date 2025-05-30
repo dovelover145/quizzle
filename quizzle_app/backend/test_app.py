@@ -585,7 +585,7 @@ def test_get_user(test_client):
     user = response.get_json().get("user")
 
     response = test_client.post("/get_user", json={
-        "_id": user.get("_id")
+        "username": user.get("username")
     })
     assert response.status_code == 200
     response_object = response.get_json()
@@ -594,16 +594,7 @@ def test_get_user(test_client):
     assert len(response_object.get("user")) == 4
 
     response = test_client.post("/get_user", json={
-        "_id": ""
-    })
-    assert response.status_code == 400
-    response_object = response.get_json()
-    assert len(response_object) == 2
-    assert response_object.get("success") == False
-    assert response_object.get("message") == "Field '_id' is invalid"
-
-    response = test_client.post("/get_user", json={
-        "_id": "6569f84b0c8b0f15c7a4f8b3"
+        "username": "impostor"
     })
     assert response.status_code == 404
     response_object = response.get_json()

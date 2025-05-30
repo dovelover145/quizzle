@@ -53,10 +53,10 @@ def home(): # Basically discarded this
 
 
 
-@app.route('/login')
+@app.route("/login")
 def login():
-    session['nonce'] = nonce
-    redirect_uri = 'http://localhost:8000/authorize'
+    session["nonce"] = nonce
+    redirect_uri = "http://localhost:8000/authorize"
     client = oauth.create_client(os.getenv("OIDC_CLIENT_NAME"))
     return client.authorize_redirect(redirect_uri, nonce=nonce)
 
@@ -434,17 +434,12 @@ def delete_user():
 def get_user():
     request_object = request.get_json()
     request_object_fields = {
-        "_id": str,
+        "username": str,
     }
     message = _validate_request_object(request_object, request_object_fields)
     if message:
         return jsonify({"success": False, "message": message}), 400
-    try:
-        _id = ObjectId(request_object.get("_id"))
-    except Exception as _:
-        message = "Field '_id' is invalid"
-        return jsonify({"success": False, "message": message}), 400
-    user = db.users.find_one({"_id": _id})
+    user = db.users.find_one({"username": request_object.get("username")})
     if not user:
         message = "Record not found"
         return jsonify({"success": False, "message": message}), 404
