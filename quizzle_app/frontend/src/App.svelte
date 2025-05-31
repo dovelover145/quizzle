@@ -4,9 +4,10 @@
   import Counter from './lib/Counter.svelte';
 
   let apiKey: string = '';
-  let showDashboard = $state(false);
-  let userEmail = null;
-  let isAdmin = $state(false);
+  let showDashboard = false;
+  let userEmail: string | null = null;
+  let isAdmin = false;
+
 
   onMount(async () => {
     /* try {
@@ -17,10 +18,10 @@
       console.error('Failed to fetch API key:', error);
     } */
     try {
-      const res = await fetch("/me", { credentials: "include" });
+      const res = await fetch("http://localhost:8000/user_info", { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
-        userEmail = data.email;
+        userEmail = data.user.email;
       }
     } catch (err) {
       console.error("Failed to fetch user", err);
