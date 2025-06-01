@@ -30,6 +30,11 @@ header {
   align-items: center;
 }
 
+.user-email {
+  font-weight: 500;
+  color: #444444;
+}
+
 .header-left {
   display: flex;
   align-items: center;
@@ -125,10 +130,51 @@ header {
   box-shadow: 0 0 0 3px rgba(125, 211, 218, 0.1);
 }
 
-.arrow {
-  font-size: 0.8rem;
-  transition: transform 0.2s ease;
-  color: #666;
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  z-index: 1000;
+  overflow: hidden;
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logout-btn {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background: #fff5f5;
+  color: #c82333;
+}
+
+.logout-btn svg {
+  flex-shrink: 0;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #e9ecef;
+  margin: 4px 0;
 }
 
 .account-btn:hover .arrow {
@@ -181,15 +227,6 @@ header {
   box-shadow: 0 4px 15px rgba(125, 211, 218, 0.3);
 }
 
-.cta-btn:hover {
-  background: #6bc5cc;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(125, 211, 218, 0.4);
-}
-
-.cta-btn:active {
-  transform: translateY(0);
-}
 
 @media (min-width: 768px) and (max-width: 1024px) {
   .logo {
