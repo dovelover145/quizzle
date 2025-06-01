@@ -1,62 +1,123 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
-    
-    let userEmail = '';
-    let quizTitle = '';
-    let isPublic = true; 
-    
-    let terms = $state([
-      { id: 1, term: '', description: '' }
-    ]);
-    
-    let nextTermId = 2;
-    
-    function addTerm() {
-      terms.push({ id: nextTermId++, term: '', description: '' });
+  import { onMount, createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
+
+  let userEmail: string = '';
+  let quizTitle: string = '';
+  let isPublic: boolean = true;
+
+  interface TermItem {
+    id: number;
+    term: string;
+    description: string;
+  }
+
+
+  let terms: TermItem[] = [
+    { id: 1, term: '', description: '' }
+  ];
+  let nextTermId = 2;
+
+
+  function addTerm() {
+    terms = [
+      ...terms,
+      { id: nextTermId, term: '', description: '' }
+    ];
+    nextTermId += 1;
+  }
+
+
+  function removeTerm(id: number) {
+    if (terms.length > 1) {
+      terms = terms.filter(term => term.id !== id);
     }
-    
-    function removeTerm(id: number) {
-      if (terms.length > 1) {
-        terms = terms.filter(term => term.id !== id);
+  }
+
+  function updateTerm(id: number, field: 'term' | 'description', value: string) {
+    terms = terms.map((t) => {
+      if (t.id === id) {
+        return { ...t, [field]: value };
       }
-    }
-    
-    function updateTerm(id: number, field: 'term' | 'description', value: string) {
-      const termIndex = terms.findIndex(term => term.id === id);
-      if (termIndex !== -1) {
-        terms[termIndex][field] = value;
-      }
-    }
-    
-    function toggleVisibility() {
-      isPublic = !isPublic;
-    }
-    
-    function handleCreate() {
-      // Handle quiz creation logic here
-      console.log('Creating quiz:', {
-        title: quizTitle,
-        isPublic: isPublic,
-        terms: terms.filter(term => term.term.trim() && term.description.trim())
-      });
-    }
-    
-    onMount(async () => {
-      try {
-        const res = await fetch("/me", { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          userEmail = data.email;
-        }
-      } catch (err) {
-        console.error("Failed to fetch user", err);
-      }
+      return t;
     });
-  </script>
+  }
+
+  function toggleVisibility() {
+    isPublic = !isPublic;
+  }
+
+  onMount(async () => {
+    try {
+      const res = await fetch('http://localhost:8000/user_info', {
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        userEmail = data.user.email;
+      } else {
+        userEmail = '';
+      }
+    } catch (err) {
+      console.error('Failed to fetch user_info:', err);
+      userEmail = '';
+    }
+  });
+
+  async function handleCreate() {
+    if (!quizTitle.trim()) {
+      alert('Enter a quiz title');
+      return;
+    }
+    if (!userEmail) {
+      alert('You must be logged in to create a quiz');
+      return;
+    }
+
+    const payload = {
+      title: quizTitle,
+      description: '',
+      creator_username: userEmail,
+      is_public: isPublic,
+      // if needed, send  a terms here too
+      // terms: terms.filter(t => t.term.trim() && t.description.trim())
+    };
+
+    try {
+      const res = await fetch('http://localhost:8000/create_quiz', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert('Failed to create quiz: ' + (data.message || res.statusText));
+        return;
+      }
+      console.log('Quiz created:', data.quiz);
+      dispatch('created', data.quiz);
+
+      quizTitle = '';
+      isPublic = true;
+      terms = [{ id: 1, term: '', description: '' }];
+      nextTermId = 2;
+    } catch (err) {
+      console.error('create_quiz call error:', err);
+      alert('Network error while creating quiz');
+    }
+  }
+
+  function handleCancel() {
+    dispatch('close');
+  }
+</script>
+
+
   
   <div class="dashboard-container">
-    
-  
     <main class="main-content">
       <div class="create-header">
         <h1 class="page-title">Create a new quiz</h1>
