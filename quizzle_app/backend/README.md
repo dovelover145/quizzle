@@ -88,4 +88,4 @@
 
 ### Example message: {username: "SamLovesSvelte"}
 
-### Example response: {username: SamLovesSvelte, email: samlovessvelte100@gmail.com, score_history: [{quiz_name: "Svelte Trivia", score: 90 / 100, date_taken: "2025-05-29T14:40:00Z"}], _id: "665340af98c3b42c4f95e6a5"}
+### Example response: {success: true, user: {username: SamLovesSvelte, email: samlovessvelte100@gmail.com, score_history: [{quiz_name: "Svelte Trivia", score: 90 / 100, date_taken: "2025-05-29T14:40:00Z"}], _id: "665340af98c3b42c4f95e6a5"}}
