@@ -1,40 +1,55 @@
 <script lang="ts">
-    import QuizTaking from './QuizTaking.svelte';
-  
-  
-    interface Props {
-      quiz: {
-      _id: string;
-      title: string;
-      date_created?: string;
-      creator_username?: string;
-      terms?: Array<{ term: string; description: string }>;
-    };
-      back: () => void;
-      complete: () => void;
+  import { onMount } from 'svelte';
+  import QuizTaking from './QuizTaking.svelte';
+
+  export let quiz: {
+    _id: string;
+    title: string;
+  };
+  export let back: () => void;
+  export let complete: () => void;
+
+  let terms: Array<{ term: string; description: string }> = [];
+
+  let showQuizTaking = false;
+
+  onMount(async () => {
+    try {
+      const res = await fetch('http://localhost:8000/get_questions', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quiz_id: quiz._id })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        terms = data.questions.map((q: any) => ({
+          term: q.question,
+          description: q.explanation
+        }));
+      } else {
+        console.error('fetch failed:', data.message || res.statusText);
+      }
+    } catch (e) {
+      console.error('fetch error:', e);
     }
-  
-    let { quiz, back, complete }: Props = $props();
-  
-    let showQuizTaking = false;
-  
-    function handleBack() {
-      back();
-    }
-  
-    function handleTakeQuiz() {
-      showQuizTaking = true;
-    }
-  
-    function handleQuizComplete() {
-      showQuizTaking = false;
-      complete();
-    }
-  
-    function handleQuizBack() {
-      showQuizTaking = false;
-    }
-  </script>
+  });
+
+  function handleTakeQuiz() {
+    showQuizTaking = true;
+  }
+  function handleQuizBack() {
+    showQuizTaking = false;
+  }
+  function handleQuizComplete() {
+    showQuizTaking = false;
+    complete();
+  }
+  function handleBack() {
+    back();
+  }
+</script>
   
   {#if showQuizTaking}
     <QuizTaking 
@@ -52,14 +67,11 @@
       </div>
   
       <div class="terms-display">
-        {#if quiz.terms && quiz.terms.length > 0}
-          {#each quiz.terms as term, index}
-            <div class="term-display-card">
-              <h3 class="term-display-title">Term {index + 1}</h3>
-              <div class="term-display-content">
-                <h4 class="term-name">{term.term}</h4>
-                <p class="term-definition">{term.description}</p>
-              </div>
+        {#if terms.length > 0}
+          {#each terms as t}
+            <div class="term-card">
+              <h3>{t.term}</h3>
+              <p>{t.description}</p>
             </div>
           {/each}
         {:else}
