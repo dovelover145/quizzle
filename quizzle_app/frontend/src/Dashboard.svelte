@@ -1,19 +1,20 @@
-<!-- src/Dashboard.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
   import CreateQuiz from './CreateQuiz.svelte';
+  import QuizDetail from './QuizDetail.svelte';
 
   let userEmail = '';
   let isAdmin = false;
 
-  // Tracks which section to display: 'home' | 'create' | 'my' | 'others'
-  let currentSection: 'home' | 'create' | 'my' | 'others' = 'home';
+  // Tracks which section to display: 'home' | 'create' | 'my' | 'others' | 'quiz-detail'
+  let currentSection: 'home' | 'create' | 'my' | 'others' | 'quiz-detail' = 'home';
 
   // List of quizzes created by the logged-in user
   type Quiz = {
     _id: string;
     title: string;
     date_created: string;
+    terms?: Array<{ term: string; description: string }>;
   };
   let myQuizzes: Quiz[] = [];
 
@@ -23,8 +24,12 @@
     title: string;
     creator_username: string;
     date_created: string;
+    terms?: Array<{ term: string; description: string }>;
   };
   let otherQuizzes: PublicQuiz[] = [];
+
+  // Selected quiz for detail view
+  let selectedQuiz: Quiz | PublicQuiz | null = null;
 
   // Fetch user information on mount
   onMount(async () => {
@@ -44,11 +49,61 @@
       console.error('Error fetching user_info:', err);
       userEmail = '';
     }
+
+    // Add mock data for demonstration
+    myQuizzes = [
+      {
+        _id: '1',
+        title: 'Quiz 1',
+        date_created: new Date().toISOString(),
+        terms: [
+          {
+            term: 'Term 1',
+            description: 'Definition 1 - Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus et lacinia augue. Integer non mattis lacus. Curabitur a tortor a arcu tempor suscipit eu sit amet odio.'
+          },
+          {
+            term: 'Term 2', 
+            description: 'Definition 2 - Nam viverra nulla eget libero accumsan commodo ultricies a lacus. Suspendisse potenti. Phasellus at velit dapibus, viverra augue eget, dignissim tellus.'
+          },
+          {
+            term: 'Term 3',
+            description: 'Definition 3 - Integer egestas eu justo ac rhoncus.'
+          },
+          {
+            term: 'Term 4',
+            description: 'Definition 4 - Cras ut velit eu ante placerat semper. Etiam diam eros, fringilla eu diam a, porta aliquam orci. Aenean enim felis, rhoncus vel.'
+          }
+        ]
+      },
+      {
+        _id: '2',
+        title: 'Science Quiz',
+        date_created: new Date().toISOString(),
+        terms: [
+          { term: 'Photosynthesis', description: 'The process by which plants convert sunlight into energy' },
+          { term: 'Mitosis', description: 'Cell division that results in two identical daughter cells' }
+        ]
+      }
+    ];
+
+    otherQuizzes = [
+      {
+        _id: '3',
+        title: 'History Quiz',
+        creator_username: 'teacher@example.com',
+        date_created: new Date().toISOString(),
+        terms: [
+          { term: 'Renaissance', description: 'A period of cultural rebirth in Europe' },
+          { term: 'Industrial Revolution', description: 'The transition to manufacturing processes' }
+        ]
+      }
+    ];
   });
 
   // Switch to home section
   function showHome() {
     currentSection = 'home';
+    selectedQuiz = null;
     myQuizzes = [];
     otherQuizzes = [];
   }
@@ -56,6 +111,7 @@
   // Switch to create quiz form
   function openCreateQuiz() {
     currentSection = 'create';
+    selectedQuiz = null;
   }
 
   // Fetch and display the logged-in user's quizzes
@@ -80,17 +136,19 @@
         ].map((q: any) => ({
           _id: q._id,
           title: q.title,
-          date_created: q.date_created
+          date_created: q.date_created,
+          terms: q.terms || []
         }));
       } else {
         console.error('Error in get_user_quizzes:', data.message);
-        myQuizzes = [];
+        // Keep mock data for demo
       }
     } catch (err) {
       console.error('Error fetching my quizzes:', err);
-      myQuizzes = [];
+      // Keep mock data for demo
     } finally {
       currentSection = 'my';
+      selectedQuiz = null;
     }
   }
 
@@ -109,29 +167,44 @@
             _id: q._id,
             title: q.title,
             creator_username: q.creator_username,
-            date_created: q.date_created
+            date_created: q.date_created,
+            terms: q.terms || []
           }));
       } else {
         console.error('Error in get_public_quizzes:', data.message);
-        otherQuizzes = [];
+        // Keep mock data for demo
       }
     } catch (err) {
       console.error('Error fetching other quizzes:', err);
-      otherQuizzes = [];
+      // Keep mock data for demo
     } finally {
       currentSection = 'others';
+      selectedQuiz = null;
     }
+  }
+
+  // Handle quiz card click
+  function handleQuizClick(quiz: Quiz | PublicQuiz) {
+    selectedQuiz = quiz;
+    currentSection = 'quiz-detail';
   }
 
   // Handle close event from CreateQuiz component
   function handleCreateClose() {
     currentSection = 'home';
+    selectedQuiz = null;
   }
 
   // Handle created event from CreateQuiz component
   // Reload the user's quizzes and switch to the 'my' section
   function handleQuizCreated() {
     loadMyQuizzes();
+  }
+
+  // Handle back from quiz detail
+  function handleQuizDetailBack() {
+    selectedQuiz = null;
+    currentSection = 'home';
   }
 
   // Helper function to scroll quiz lists horizontally
@@ -155,32 +228,26 @@
 <div class="dashboard-container">
   <!-- Sidebar -->
   <aside class="sidebar">
-    <div class="sidebar-item create" on:click={openCreateQuiz}>
+    <div class="sidebar-item create" onclick={openCreateQuiz}>
       <span class="icon">＋</span>
       <span class="text">Create</span>
     </div>
 
     <div class="divider"></div>
 
-    <div class="sidebar-item" on:click={showHome}>
-      <span class="icon">
-        <!-- Home icon SVG -->
-      </span>
+    <div class="sidebar-item" onclick={showHome}>
+      <span class="icon">🏠</span>
       <span class="text">Home</span>
     </div>
 
-    <div class="sidebar-item" on:click={loadMyQuizzes}>
-      <span class="icon">
-        <!-- My quizzes icon SVG -->
-      </span>
+    <div class="sidebar-item" onclick={loadMyQuizzes}>
+      <span class="icon">📁</span>
       <span class="text">My quizzes</span>
     </div>
 
-    <div class="sidebar-item" on:click={loadOtherQuizzes}>
-      <span class="icon">
-        <!-- Others' quizzes icon SVG -->
-      </span>
-      <span class="text">Study with others’ quizzes</span>
+    <div class="sidebar-item" onclick={loadOtherQuizzes}>
+      <span class="icon">👥</span>
+      <span class="text">Study with others' quizzes</span>
     </div>
   </aside>
 
@@ -192,6 +259,12 @@
         on:close={handleCreateClose}
         on:created={handleQuizCreated}
       />
+    {:else if currentSection === 'quiz-detail' && selectedQuiz}
+      <!-- Quiz detail component -->
+      <QuizDetail 
+        quiz={selectedQuiz} 
+        on:back={handleQuizDetailBack}
+      />
     {:else if currentSection === 'my'}
       <!-- My quizzes list -->
       <section class="quizzes-section">
@@ -199,7 +272,7 @@
         <div class="quiz-section-wrapper">
           <button
             class="scroll-arrow left"
-            on:click={() => scrollContainer('my-quizzes', 'left')}
+            onclick={() => scrollContainer('my-quizzes', 'left')}
           >
             &lt;
           </button>
@@ -210,7 +283,7 @@
                 <p>No quizzes created yet.</p>
               {:else}
                 {#each myQuizzes as quiz (quiz._id)}
-                  <div class="quiz-card">
+                  <div class="quiz-card" role="button" tabindex="0" onclick={() => handleQuizClick(quiz)} onkeydown={() => handleQuizClick(quiz)}>
                     <h3 class="quiz-title">{quiz.title}</h3>
                     <small>{new Date(quiz.date_created).toLocaleString()}</small>
                   </div>
@@ -221,7 +294,7 @@
 
           <button
             class="scroll-arrow right"
-            on:click={() => scrollContainer('my-quizzes', 'right')}
+            onclick={() => scrollContainer('my-quizzes', 'right')}
           >
             &gt;
           </button>
@@ -230,11 +303,11 @@
     {:else if currentSection === 'others'}
       <!-- Others' public quizzes list -->
       <section class="quizzes-section">
-        <h2 class="section-title">Study with others’ quizzes</h2>
+        <h2 class="section-title">Study with others' quizzes</h2>
         <div class="quiz-section-wrapper">
           <button
             class="scroll-arrow left"
-            on:click={() => scrollContainer('other-quizzes', 'left')}
+            onclick={() => scrollContainer('other-quizzes', 'left')}
           >
             &lt;
           </button>
@@ -245,7 +318,7 @@
                 <p>No public quizzes available.</p>
               {:else}
                 {#each otherQuizzes as quiz (quiz._id)}
-                  <div class="quiz-card">
+                  <div class="quiz-card" role="button" tabindex="0" onclick={() => handleQuizClick(quiz)} onkeydown={() => handleQuizClick(quiz)}>
                     <h3 class="quiz-title">{quiz.title}</h3>
                     <p class="quiz-author">by {quiz.creator_username}</p>
                     <small>{new Date(quiz.date_created).toLocaleString()}</small>
@@ -257,7 +330,7 @@
 
           <button
             class="scroll-arrow right"
-            on:click={() => scrollContainer('other-quizzes', 'right')}
+            onclick={() => scrollContainer('other-quizzes', 'right')}
           >
             &gt;
           </button>
@@ -267,7 +340,7 @@
       <!-- Home section -->
       <section>
         <h2>Welcome to Quiz App</h2>
-        <p>Use the menu on the left to “Create,” view “My quizzes,” or “Study with others’ quizzes.”</p>
+        <p>Use the menu on the left to "Create," view "My quizzes," or "Study with others' quizzes."</p>
       </section>
     {/if}
   </main>
