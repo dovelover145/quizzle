@@ -3,45 +3,32 @@
 
   const dispatch = createEventDispatcher();
 
-  let userEmail: string = '';
-  let quizTitle: string = '';
-  let isPublic: boolean = true;
+  let userEmail = '';
+  let quizTitle = '';
+  let isPublic = true;
 
   interface TermItem {
     id: number;
-    term: string;
-    description: string;
+    term: string;         
+    description: string; 
   }
 
-
-  let terms: TermItem[] = [
-    { id: 1, term: '', description: '' }
-  ];
+  let terms: TermItem[] = [{ id: 1, term: '', description: '' }];
   let nextTermId = 2;
 
-
   function addTerm() {
-    terms = [
-      ...terms,
-      { id: nextTermId, term: '', description: '' }
-    ];
+    terms = [...terms, { id: nextTermId, term: '', description: '' }];
     nextTermId += 1;
   }
 
-
   function removeTerm(id: number) {
     if (terms.length > 1) {
-      terms = terms.filter(term => term.id !== id);
+      terms = terms.filter((t) => t.id !== id);
     }
   }
 
   function updateTerm(id: number, field: 'term' | 'description', value: string) {
-    terms = terms.map((t) => {
-      if (t.id === id) {
-        return { ...t, [field]: value };
-      }
-      return t;
-    });
+    terms = terms.map((t) => (t.id === id ? { ...t, [field]: value } : t));
   }
 
   function toggleVisibility() {
@@ -66,6 +53,14 @@
     }
   });
 
+  /** 
+   * 1) create_quiz → get quiz_id
+   * 2) for each term, call add_question with:
+   *      question = termName
+   *      answers = []  (empty array)
+   *      correct_answer = termDefinition
+   *      explanation = ''   (or same as correct_answer)
+   */
   async function handleCreate() {
     if (!quizTitle.trim()) {
       alert('Enter a quiz title');
@@ -80,34 +75,72 @@
       title: quizTitle,
       description: '',
       creator_username: userEmail,
-      is_public: isPublic,
-      // if needed, send  a terms here too
-      // terms: terms.filter(t => t.term.trim() && t.description.trim())
+      is_public: isPublic
     };
 
+    let newQuizId: string;
     try {
-      const res = await fetch('http://localhost:8000/create_quiz', {
+      const resQuiz = await fetch('http://localhost:8000/create_quiz', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await res.json();
-      if (!res.ok) {
-        alert('Failed to create quiz: ' + (data.message || res.statusText));
+      const dataQuiz = await resQuiz.json();
+      if (!resQuiz.ok) {
+        alert('Failed to create quiz: ' + (dataQuiz.message || resQuiz.statusText));
         return;
       }
-      console.log('Quiz created:', data.quiz);
-      dispatch('created', data.quiz);
-
-      quizTitle = '';
-      isPublic = true;
-      terms = [{ id: 1, term: '', description: '' }];
-      nextTermId = 2;
+      newQuizId = dataQuiz.quiz._id as string;
+      console.log('Quiz created:', newQuizId);
     } catch (err) {
       console.error('create_quiz call error:', err);
       alert('Network error while creating quiz');
+      return;
     }
+
+    for (const t of terms) {
+      if (!t.term.trim() || !t.description.trim()) {
+        continue;
+      }
+
+      const questionPayload = {
+        quiz_id:       newQuizId,
+        question:      t.term,           
+        answers:       [t.description],  
+        correct_answer:t.description,    
+        explanation:   ''                
+      };
+
+      try {
+        const resQ = await fetch('http://localhost:8000/add_question', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(questionPayload)
+        });
+        const dataQ = await resQ.json();
+        if (!resQ.ok) {
+          console.error('Failed to add question:', dataQ.message || resQ.statusText);
+        } else {
+          console.log('Question added:', dataQ.question._id);
+        }
+      } catch (err) {
+        console.error('add_question call error:', err);
+      }
+    }
+
+    dispatch('created', {
+      _id: newQuizId,
+      title: quizTitle,
+      creator_username: userEmail,
+      is_public: isPublic
+    });
+
+    quizTitle = '';
+    isPublic = true;
+    terms = [{ id: 1, term: '', description: '' }];
+    nextTermId = 2;
   }
 
   function handleCancel() {

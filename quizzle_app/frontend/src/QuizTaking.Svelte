@@ -10,7 +10,6 @@
     question: string;
     options: string[];
     correctAnswer: number;
-    explanation: string;
   }
 
   let questions: Question[] = [];
@@ -20,75 +19,107 @@
   let showResults = false;
   let score = 0;
 
+  const answersPerQuestion = 3;
+
   onMount(async () => {
-    try {
-      const res = await fetch('http://localhost:8000/get_questions', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quiz_id: quiz._id })
-      });
-      console.log('[QuizTaking] get_questions status:', res.status);
-
-      const data = await res.json();
-      console.log('[QuizTaking] get_questions data:', data);
-
-      if (res.ok && data.success) {
-        questions = data.questions.map((q: any, idx: number) => {
-          const opts: string[] = Array.isArray(q.answers) ? q.answers : [];
-          const correctIdx = opts.findIndex((s) => s === q.correct_answer);
-
-          return {
-            id: idx + 1,
-            question: q.question || '(no question)',
-            options: opts.length ? opts : ['(no options)'],
-            correctAnswer: correctIdx >= 0 ? correctIdx : 0,
-            explanation: q.explanation || ''
-          };
-        });
-        answers = new Array(questions.length).fill(null);
-        console.log('[QuizTaking] mapped questions:', questions);
-      } else {
-        console.error('[QuizTaking] get_questions failed:', data.message || res.statusText);
-      }
-    } catch (err) {
-      console.error('[QuizTaking] fetch error:', err);
+    const resThisQuiz = await fetch('http://localhost:8000/get_questions', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quiz_id: quiz._id })
+    });
+    const dataThisQuiz = await resThisQuiz.json();
+    if (!(resThisQuiz.ok && dataThisQuiz.success)) {
+      console.error('Failed to fetch this quiz questions:', dataThisQuiz.message);
+      return;
     }
+    const thisQuizQuestions = dataThisQuiz.questions as Array<any>;
+
+    const resAll = await fetch('http://localhost:8000/get_all_questions', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const dataAll = await resAll.json();
+    if (!(resAll.ok && dataAll.success)) {
+      console.error('Failed to fetch all questions:', dataAll.message);
+      return;
+    }
+    const allQuestions = dataAll.questions as Array<any>;
+
+    const answerPool: string[] = [
+      "Banana",
+      "Apple",
+      ...allQuestions.map(q => q.correct_answer)
+    ];
+    questions = thisQuizQuestions.map((q: any, idx: number) => {
+      const correctAnswer = q.correct_answer;
+
+      const optionsArray: string[] = [correctAnswer];
+
+      const distractorPool = answerPool.filter((ans) => ans !== correctAnswer);
+
+      while (optionsArray.length < answersPerQuestion) {
+        const randomChoice =
+          distractorPool[Math.floor(Math.random() * distractorPool.length)];
+        optionsArray.push(randomChoice);
+      }
+
+      const shuffledAnswers = optionsArray
+        .slice() 
+        .sort(() => Math.random() - 0.5);
+
+      return {
+        id: idx + 1,
+        question: q.question,
+        options: shuffledAnswers,
+        correctAnswer: shuffledAnswers.indexOf(correctAnswer)
+      };
+    });
+
+    answers = new Array(questions.length).fill(null);
   });
 
   function handleAnswerSelect(idx: number) {
     selectedAnswer = idx;
   }
+
   function handleNext() {
     if (selectedAnswer === null) return;
-    const nextAnswers = [...answers];
-    nextAnswers[currentQuestionIndex] = selectedAnswer;
-    answers = nextAnswers;
+
+    answers[currentQuestionIndex] = selectedAnswer;
 
     if (currentQuestionIndex < questions.length - 1) {
-      currentQuestionIndex += 1;
+      currentQuestionIndex++;
       selectedAnswer = answers[currentQuestionIndex];
     } else {
-      score = questions.reduce((cnt, q, i) => cnt + (answers[i] === q.correctAnswer ? 1 : 0), 0);
+      score = questions.reduce(
+        (sum, q, i) => sum + (answers[i] === q.correctAnswer ? 1 : 0),
+        0
+      );
       showResults = true;
     }
   }
+
   function handlePrevious() {
     if (currentQuestionIndex > 0) {
-      currentQuestionIndex -= 1;
+      currentQuestionIndex--;
       selectedAnswer = answers[currentQuestionIndex];
     }
   }
+
   function handleRestart() {
     currentQuestionIndex = 0;
     selectedAnswer = null;
-    answers = new Array(questions.length).fill(null);
+    answers.fill(null);
     showResults = false;
     score = 0;
   }
+
   function handleBack() {
     onback();
   }
+
   function handleComplete() {
     oncomplete();
   }

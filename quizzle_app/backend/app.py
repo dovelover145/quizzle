@@ -349,6 +349,17 @@ def get_questions():
 
 
 
+@app.route("/get_all_questions")
+def get_all_questions():
+    all_qs = list(db.questions.find({}))
+    for q in all_qs:
+        q["_id"] = str(q["_id"])
+    return jsonify({"success": True, "questions": all_qs})
+
+
+
+
+
 
 @app.route("/add_user", methods=["POST"])
 def add_user():
