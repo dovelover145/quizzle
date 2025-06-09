@@ -201,6 +201,19 @@ def delete_quiz():
 
 
 
+@app.route('/delete_quiz_questions/<quiz_id>', methods=['DELETE'])
+def delete_quiz_questions(quiz_id):
+    try:
+        # remove every question document whose quiz_id matches
+        result = mongo.db.questions.delete_many({ 'quiz_id': quiz_id })
+        return jsonify(success=True, deleted_count=result.deleted_count)
+    except Exception as e:
+        return jsonify(success=False, message=str(e)), 500
+
+
+
+
+
 @app.route("/get_user_quizzes", methods=["POST"])
 def get_user_quizzes():
     request_object = request.get_json()

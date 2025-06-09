@@ -1,313 +1,207 @@
 <script lang="ts">
-    import { onMount, createEventDispatcher } from 'svelte';
-  
-    const dispatch = createEventDispatcher();
-  
-    export let quizId: string;
-  
-    let userEmail = '';
-    let quizTitle = '';
-    let isPublic = true;
-    let loading = true;
-    let error = '';
-  
-    interface TermItem {
-      id: number;
-      term: string;         
-      description: string; 
-      questionId?: string; //
+  import { onMount, createEventDispatcher } from 'svelte';
+
+  const dispatch = createEventDispatcher();
+  export let quizId: string;
+
+  let userEmail = '';
+  let quizTitle = '';
+  let isPublic = true;
+  let loading = true;
+  let error = '';
+  let quizDescription = '';
+  let dateCreated = '';
+
+  interface TermItem { id: number; term: string; description: string; questionId?: string; }
+
+  let terms: TermItem[] = [];
+  let nextTermId = 1;
+  let originalQuestions: { _id: string; question: string; correct_answer: string }[] = [];
+
+  onMount(async () => {
+    try {
+      const userRes = await fetch('http://localhost:8000/user_info', { credentials: 'include' });
+      const userData = await userRes.json();
+      userEmail = userRes.ok && userData.success ? userData.user.email : '';
+      await loadQuizData();
+    } catch (err) {
+      console.error('Init EditQuiz error:', err);
+      error = 'Failed to load quiz data';
+    } finally {
+      loading = false;
     }
-  
-    let terms: TermItem[] = [];
-    let nextTermId = 1;
-  
-    onMount(async () => {
-      try {
-        // Fetch user info
-        const userRes = await fetch('http://localhost:8000/user_info', {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const userData = await userRes.json();
-        if (userRes.ok && userData.success) {
-          userEmail = userData.user.email;
+  });
+
+  async function loadQuizData() {
+    try {
+      const quizzesRes = await fetch('http://localhost:8000/get_user_quizzes', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creator_username: userEmail })
+      });
+      if (!quizzesRes.ok) throw new Error('Failed to fetch quizzes');
+      const { success, public_quizzes, private_quizzes, message } = await quizzesRes.json();
+      if (!success) throw new Error(message || 'Could not load quizzes');
+      const allQuizzes = [...public_quizzes, ...private_quizzes];
+      const quiz = allQuizzes.find(q => q._id === quizId);
+      if (!quiz) throw new Error('Quiz not found');
+      quizTitle = quiz.title || '';
+      isPublic = quiz.is_public;
+      quizDescription = quiz.description || '';
+      dateCreated = quiz.date_created;
+      const questionsRes = await fetch('http://localhost:8000/get_questions', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quiz_id: quizId })
+      });
+      if (!questionsRes.ok) throw new Error('Failed to fetch questions');
+      const { success: qSuccess, questions, message: qMsg } = await questionsRes.json();
+      if (!qSuccess) throw new Error(qMsg || 'Could not load questions');
+      originalQuestions = questions;
+      terms = questions.map((q, i) => ({ id: i+1, term: q.question||'', description: q.correct_answer||'', questionId: q._id }));
+      nextTermId = terms.length + 1;
+    } catch (err) {
+      console.error('loadQuizData error:', err);
+      error = 'Failed to load quiz data';
+      terms = [{ id:1, term:'', description:'' }]; nextTermId = 2;
+    }
+  }
+
+  function addTerm() { terms = [...terms, { id: nextTermId, term:'', description:'' }]; nextTermId++; }
+  function removeTerm(id: number) { if(terms.length>1) terms = terms.filter(t => t.id!==id); }
+  function updateTerm(id:number, field:'term'|'description', val:string) { terms = terms.map(t=>t.id===id?{...t,[field]:val}:t); }
+  function toggleVisibility() { isPublic = !isPublic; }
+
+  async function handleUpdate() {
+    if(!quizTitle.trim()){ alert('Enter a quiz title'); return; }
+    if(!userEmail){ alert('Login required'); return; }
+    try {
+      const resMeta = await fetch('http://localhost:8000/update_quiz', {
+        method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({_id:quizId,title:quizTitle,description:quizDescription,creator_username:userEmail,is_public:isPublic,date_created:dateCreated})
+      });
+      if(!resMeta.ok){ const e=await resMeta.json(); throw new Error(e.message||'Meta update failed'); }
+      const origMap = new Map(originalQuestions.map(q=>[q._id,q]));
+      for(const t of terms){
+        if(!t.term.trim()||!t.description.trim()) continue;
+        if(t.questionId){
+          const orig=origMap.get(t.questionId)!;
+          if(orig.question!==t.term||orig.correct_answer!==t.description){
+            await fetch('http://localhost:8000/add_question',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({quiz_id:quizId,question:t.term,answers:[t.description],correct_answer:t.description,explanation:''})});
+            // delete old question by sending {_id: t.questionId}
+            await fetch('http://localhost:8000/delete_question',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({_id:t.questionId})});
+          }
+          origMap.delete(t.questionId);
         } else {
-          userEmail = '';
+          await fetch('http://localhost:8000/add_question',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({quiz_id:quizId,question:t.term,answers:[t.description],correct_answer:t.description,explanation:''})});
         }
-  
-        await loadQuizData();
-      } catch (err) {
-        console.error('Failed to initialize EditQuiz:', err);
-        error = 'Failed to load quiz data';
-      } finally {
-        loading = false;
       }
-    });
-  
-    async function loadQuizData() {
-      try {
-        const quizRes = await fetch(`http://localhost:8000/get_quiz_details/${quizId}`, {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        if (!quizRes.ok) {
-          throw new Error('Failed to fetch quiz details');
-        }
-        
-        const quizData = await quizRes.json();
-        
-        if (quizData.success) {
-          const quiz = quizData.quiz;
-          quizTitle = quiz.title || '';
-          isPublic = quiz.is_public !== false; // Default to true if not specified
-          
-          // Get quiz questions/terms
-          const questionsRes = await fetch(`http://localhost:8000/get_quiz_questions/${quizId}`, {
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          
-          if (questionsRes.ok) {
-            const questionsData = await questionsRes.json();
-            if (questionsData.success && questionsData.questions) {
-              terms = questionsData.questions.map((q: any, index: number) => ({
-                id: index + 1,
-                term: q.question || '',
-                description: q.correct_answer || '',
-                questionId: q._id
-              }));
-              nextTermId = terms.length + 1;
-            }
-          }
-          
-          // If no terms found, start with one empty term
-          if (terms.length === 0) {
-            terms = [{ id: 1, term: '', description: '' }];
-            nextTermId = 2;
-          }
-        } else {
-          throw new Error(quizData.message || 'Failed to load quiz');
-        }
-      } catch (err) {
-        console.error('Error loading quiz data:', err);
-        error = 'Failed to load quiz data';
-        // Initialize with empty data as fallback
-        terms = [{ id: 1, term: '', description: '' }];
-        nextTermId = 2;
+      for(const oldId of origMap.keys()){
+        await fetch('http://localhost:8000/delete_question',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({_id:oldId})});
       }
-    }
-  
-    function addTerm() {
-      terms = [...terms, { id: nextTermId, term: '', description: '' }];
-      nextTermId += 1;
-    }
-  
-    function removeTerm(id: number) {
-      if (terms.length > 1) {
-        terms = terms.filter((t) => t.id !== id);
-      }
-    }
-  
-    function updateTerm(id: number, field: 'term' | 'description', value: string) {
-      terms = terms.map((t) => (t.id === id ? { ...t, [field]: value } : t));
-    }
-  
-    function toggleVisibility() {
-      isPublic = !isPublic;
-    }
-  
-    async function handleUpdate() {
-      if (!quizTitle.trim()) {
-        alert('Enter a quiz title');
-        return;
-      }
-      if (!userEmail) {
-        alert('You must be logged in to update a quiz');
-        return;
-      }
-  
-      try {
-        // Update quiz details
-        const updateQuizPayload = {
-          quiz_id: quizId,
-          title: quizTitle,
-          is_public: isPublic
-        };
-  
-        const updateQuizRes = await fetch('http://localhost:8000/update_quiz', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updateQuizPayload)
-        });
-  
-        if (!updateQuizRes.ok) {
-          const errorData = await updateQuizRes.json();
-          throw new Error(errorData.message || 'Failed to update quiz');
-        }
-  
-        // Delete all existing questions first
-        const deleteRes = await fetch(`http://localhost:8000/delete_quiz_questions/${quizId}`, {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-  
-        if (!deleteRes.ok) {
-          console.warn('Failed to delete existing questions, continuing with update');
-        }
-  
-        // Add all terms as new questions
-        for (const t of terms) {
-          if (!t.term.trim() || !t.description.trim()) {
-            continue;
-          }
-  
-          const questionPayload = {
-            quiz_id: quizId,
-            question: t.term,           
-            answers: [t.description],  
-            correct_answer: t.description,    
-            explanation: ''                
-          };
-  
-          try {
-            const resQ = await fetch('http://localhost:8000/add_question', {
-              method: 'POST',
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(questionPayload)
-            });
-            
-            if (!resQ.ok) {
-              const errorData = await resQ.json();
-              console.error('Failed to add question:', errorData.message);
-            }
-          } catch (err) {
-            console.error('add_question call error:', err);
-          }
-        }
-  
-        // Dispatch success event
-        dispatch('updated', {
-          _id: quizId,
-          title: quizTitle,
-          is_public: isPublic
-        });
-  
-        alert('Quiz updated successfully!');
-        
-      } catch (err) {
-        console.error('Error updating quiz:', err);
-        alert('Failed to update quiz: ' + (err.message || 'Unknown error'));
-      }
-    }
-  
-    function handleCancel() {
-      dispatch('close');
-    }
-  </script>
-  
-  {#if loading}
-    <div class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>Loading quiz data...</p>
-    </div>
-  {:else if error}
-    <div class="error-container">
-      <p class="error-message">{error}</p>
-      <button class="retry-btn" on:click={loadQuizData}>Retry</button>
-      <button class="cancel-btn" on:click={handleCancel}>Cancel</button>
-    </div>
-  {:else}
-    <div class="dashboard-container">
-      <main class="main-content">
-        <div class="create-header">
-          <h1 class="page-title">Edit quiz</h1>
-          <div class="header-actions">
-            <button class="cancel-btn" on:click={handleCancel}>
-              Cancel
-            </button>
-            <button class="create-btn" on:click={handleUpdate}>
-              Update
-            </button>
-          </div>
+      dispatch('updated',{_id:quizId,title:quizTitle,is_public:isPublic}); alert('Quiz updated successfully!');
+    } catch(err){ console.error('update error:',err); alert('Failed to update quiz: '+(err as Error).message); }
+  }
+  function handleCancel(){ dispatch('close'); }
+</script>
+
+
+{#if loading}
+  <div class="loading-container">
+    <div class="loading-spinner"></div>
+    <p>Loading quiz data...</p>
+  </div>
+{:else if error}
+  <div class="error-container">
+    <p class="error-message">{error}</p>
+    <button class="retry-btn" on:click={loadQuizData}>Retry</button>
+    <button class="cancel-btn" on:click={handleCancel}>Cancel</button>
+  </div>
+{:else}
+  <div class="dashboard-container">
+    <main class="main-content">
+      <div class="create-header">
+        <h1 class="page-title">Edit quiz</h1>
+        <div class="header-actions">
+          <button class="cancel-btn" on:click={handleCancel}>Cancel</button>
+          <button class="create-btn" on:click={handleUpdate}>Update</button>
         </div>
-  
-        <div class="form-container">
-          <div class="form-section">
-            <label class="form-label" for="quiz-title">Title</label>
-            <input
-              id="quiz-title"
-              type="text"
-              class="form-input"
-              placeholder="Enter title..."
-              bind:value={quizTitle}
-            />
-          </div>
-  
-          <div class="form-section">
-            <div class="visibility-section">
-              <label class="form-label">Quiz Visibility</label>
-              <div class="toggle-container">
-                <span class="toggle-label" class:active={!isPublic}>Private</span>
-                <button class="toggle-switch" class:public={isPublic} on:click={toggleVisibility}>
-                  <div class="toggle-slider"></div>
-                </button>
-                <span class="toggle-label" class:active={isPublic}>Public</span>
-              </div>
-              <p class="visibility-description">
-                {isPublic ? 'Other users can find and study with your quiz' : 'Only you can access this quiz'}
-              </p>
-            </div>
-          </div>
-  
-          <div class="form-section">
-            <label class="form-label">Terms</label>
-            <div class="terms-container">
-              {#each terms as term, index}
-                <div class="term-card">
-                  <div class="term-header">
-                    <span class="term-number">{index + 1}</span>
-                    {#if terms.length > 1}
-                      <button class="delete-btn" on:click={() => removeTerm(term.id)}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M3 6h18"></path>
-                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                        </svg>
-                      </button>
-                    {/if}
-                  </div>
-                  <div class="term-inputs">
-                    <input
-                      type="text"
-                      class="form-input"
-                      placeholder="Enter term"
-                      value={term.term}
-                      on:input={(e) => updateTerm(term.id, 'term', e.target.value)}
-                    />
-                    <textarea
-                      class="form-textarea"
-                      placeholder="Enter description"
-                      value={term.description}
-                      on:input={(e) => updateTerm(term.id, 'description', e.target.value)}
-                    ></textarea>
-                  </div>
-                </div>
-              {/each}
-              
-              <button class="add-term-btn" on:click={addTerm}>
-                <span class="icon">+</span>
-                Add a term
+      </div>
+
+      <div class="form-container">
+        <class class="form-section">
+          <label class="form-label" for="quiz-title">Title</label>
+          <input
+            id="quiz-title"
+            type="text"
+            class="form-input"
+            placeholder="Enter title..."
+            bind:value={quizTitle}
+          />
+        </class>
+
+        <div class="form-section">
+          <div class="visibility-section">
+            <label class="form-label">Quiz Visibility</label>
+            <div class="toggle-container">
+              <span class="toggle-label" class:active={!isPublic}>Private</span>
+              <button class="toggle-switch" class:public={isPublic} on:click={toggleVisibility}>
+                <div class="toggle-slider"></div>
               </button>
+              <span class="toggle-label" class:active={isPublic}>Public</span>
             </div>
+            <p class="visibility-description">
+              {isPublic
+                ? 'Other users can find and study with your quiz'
+                : 'Only you can access this quiz'}
+            </p>
           </div>
         </div>
-      </main>
-    </div>
-  {/if}
+
+        <div class="form-section">
+          <label class="form-label">Terms</label>
+          <div class="terms-container">
+            {#each terms as term, index}
+              <div class="term-card">
+                <div class="term-header">
+                  <span class="term-number">{index + 1}</span>
+                  {#if terms.length > 1}
+                    <button class="delete-btn" on:click={() => removeTerm(term.id)}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  {/if}
+                </div>
+                <div class="term-inputs">
+                  <input
+                    type="text"
+                    class="form-input"
+                    placeholder="Enter term"
+                    value={term.term}
+                    on:input={(e) => updateTerm(term.id, 'term', e.target.value)}
+                  />
+                  <textarea
+                    class="form-textarea"
+                    placeholder="Enter description"
+                    value={term.description}
+                    on:input={(e) => updateTerm(term.id, 'description', e.target.value)}
+                  ></textarea>
+                </div>
+              </div>
+            {/each}
+
+            <button class="add-term-btn" on:click={addTerm}>
+              <span class="icon">+</span> Add a term
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+{/if}
+
+
   
   <style>
     .dashboard-container {
