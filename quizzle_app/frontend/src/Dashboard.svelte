@@ -374,7 +374,7 @@ function handleQuizUpdated() {
     {:else}
       <!-- Home section -->
       <section>
-        <h2>Welcome to Quiz App</h2>
+        <h2>Welcome to Quizzle</h2>
         <p>Use the menu on the left to "Create," view "My quizzes," or "Study with others' quizzes."</p>
       </section>
     {/if}

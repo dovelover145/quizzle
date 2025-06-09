@@ -65,7 +65,7 @@
 <main>
   <header>
     <div class="header-left">
-      <h1 class="logo">Quiz App</h1>
+      <h1 class="logo">Quizzle</h1>
     </div>
     {#if userEmail}
         <div class="account-dropdown">
@@ -100,7 +100,7 @@
     <section class="hero">
       <div class="hero-content">
         <h2 class="hero-title">
-          Studying made <span class="highlight">easy</span> with Quiz App!
+          Studying made <span class="highlight">easy</span> with Quizzle!
         </h2>
         <button
           class="cta-btn"
