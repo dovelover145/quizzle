@@ -2,12 +2,14 @@
   import { onMount } from 'svelte';
   import CreateQuiz from './CreateQuiz.svelte';
   import QuizDetail from './QuizDetail.svelte';
+  import EditQuiz from './EditQuiz.svelte';
 
   let userEmail = '';
   let isAdmin = false;
 
   // Tracks which section to display: 'home' | 'create' | 'my' | 'others' | 'quiz-detail'
-  let currentSection: 'home' | 'create' | 'my' | 'others' | 'quiz-detail' = 'home';
+  let currentSection: 'home' | 'create' | 'my' | 'others' | 'quiz-detail' | 'edit' = 'home';
+  let editingQuizId: string | null = null;
 
   // List of quizzes created by the logged-in user
   type Quiz = {
@@ -100,6 +102,8 @@
     ];
   });
 
+
+
   // Switch to home section
   function showHome() {
     currentSection = 'home';
@@ -183,6 +187,21 @@
     }
   }
 
+  function openEditQuiz(quizId: string) {
+  editingQuizId = quizId;
+  currentSection = 'edit';
+}
+
+function handleEditClose() {
+  editingQuizId = null;
+  currentSection = 'home';
+}
+
+function handleQuizUpdated() {
+  editingQuizId = null;
+  loadMyQuizzes(); // Refresh the quiz list
+}
+
   // Handle quiz card click
   function handleQuizClick(quiz: Quiz | PublicQuiz) {
     selectedQuiz = quiz;
@@ -253,7 +272,13 @@
 
   <!-- Main content -->
   <main class="main-content">
-    {#if currentSection === 'create'}
+    {#if currentSection === 'edit' && editingQuizId}
+  <EditQuiz 
+    quizId={editingQuizId}
+    on:close={handleEditClose}
+    on:updated={handleQuizUpdated}
+  />
+    {:else if currentSection === 'create'}
       <!-- CreateQuiz component -->
       <CreateQuiz
         on:close={handleCreateClose}
@@ -282,12 +307,21 @@
               {#if myQuizzes.length === 0}
                 <p>No quizzes created yet.</p>
               {:else}
-                {#each myQuizzes as quiz (quiz._id)}
-                  <div class="quiz-card" role="button" tabindex="0" onclick={() => handleQuizClick(quiz)} onkeydown={() => handleQuizClick(quiz)}>
+                
+                  {#each myQuizzes as quiz (quiz._id)}
+                  <div class="quiz-card">
                     <h3 class="quiz-title">{quiz.title}</h3>
                     <small>{new Date(quiz.date_created).toLocaleString()}</small>
+                    <div class="quiz-actions">
+                      <button class="edit-btn" onclick={() => openEditQuiz(quiz._id)}>
+                        Edit
+                      </button>
+                      <button class="view-btn" onclick={() => handleQuizClick(quiz)}>
+                        View
+                      </button>
+                    </div>
                   </div>
-                {/each}
+                  {/each}
               {/if}
             </div>
           </div>
@@ -336,6 +370,7 @@
           </button>
         </div>
       </section>
+    
     {:else}
       <!-- Home section -->
       <section>
