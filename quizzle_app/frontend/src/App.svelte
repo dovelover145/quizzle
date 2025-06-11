@@ -51,7 +51,7 @@
     window.location.href = 'http://localhost:8000/logout';
   }
 
-  // Close dropdown when clicking outside
+
   function handleClickOutside(event: MouseEvent) {
     const target = event.target as Element;
     if (!target.closest('.account-dropdown')) {
