@@ -100,19 +100,37 @@
       dispatch('updated',{_id:quizId,title:quizTitle,is_public:isPublic}); alert('Quiz updated successfully!');
     } catch(err){ console.error('update error:',err); alert('Failed to update quiz: '+(err as Error).message); }
   }
+  
   function handleCancel(){ dispatch('close'); }
-  function handleDelete() {
-    if (confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
-      // Reset the form
-      quizTitle = '';
-      isPublic = true;
-      terms = [{ id: 1, term: '', description: '' }];
-      nextTermId = 2;
-      
-      // Dispatch delete event
-      dispatch('deleted');
+
+  async function handleDelete() {
+    if (!confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // 1) hit your delete_quiz endpoint
+      const res = await fetch('http://localhost:8000/delete_quiz', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _id: quizId })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'Server rejected delete');
+      }
+
+      // 2) notify parent & clear out UI
+      dispatch('deleted', { _id: quizId });
+      alert('Quiz deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting quiz:', err);
+      alert('Failed to delete quiz: ' + (err as Error).message);
     }
   }
+
+
 </script>
 
 
