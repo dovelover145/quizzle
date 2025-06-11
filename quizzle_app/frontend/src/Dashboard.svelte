@@ -11,7 +11,6 @@
   let currentSection: 'home' | 'create' | 'my' | 'others' | 'quiz-detail' | 'edit' = 'home';
   let editingQuizId: string | null = null;
 
-  // List of quizzes created by the logged-in user
   type Quiz = {
     _id: string;
     title: string;
@@ -20,7 +19,6 @@
   };
   let myQuizzes: Quiz[] = [];
 
-  // List of public quizzes created by other users
   type PublicQuiz = {
     _id: string;
     title: string;
@@ -29,11 +27,7 @@
     terms?: Array<{ term: string; description: string }>;
   };
   let otherQuizzes: PublicQuiz[] = [];
-
-  // Selected quiz for detail view
   let selectedQuiz: Quiz | PublicQuiz | null = null;
-
-  // Fetch user information on mount
   onMount(async () => {
     try {
       const res = await fetch('http://localhost:8000/user_info', {
@@ -279,19 +273,16 @@ function handleQuizUpdated() {
     on:updated={handleQuizUpdated}
   />
     {:else if currentSection === 'create'}
-      <!-- CreateQuiz component -->
       <CreateQuiz
         on:close={handleCreateClose}
         on:created={handleQuizCreated}
       />
     {:else if currentSection === 'quiz-detail' && selectedQuiz}
-      <!-- Quiz detail component -->
       <QuizDetail 
         quiz={selectedQuiz} 
         on:back={handleQuizDetailBack}
       />
     {:else if currentSection === 'my'}
-      <!-- My quizzes list -->
       <section class="quizzes-section">
         <h2 class="section-title">My recent quizzes</h2>
         <div class="quiz-section-wrapper">
@@ -372,7 +363,6 @@ function handleQuizUpdated() {
       </section>
     
     {:else}
-      <!-- Home section -->
       <section>
         <h2>Welcome to Quizzle</h2>
         <p>Use the menu on the left to "Create," view "My quizzes," or "Study with others' quizzes."</p>

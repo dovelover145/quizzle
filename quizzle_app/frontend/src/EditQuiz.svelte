@@ -103,13 +103,11 @@
   function handleCancel(){ dispatch('close'); }
   function handleDelete() {
     if (confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
-      // Reset the form
       quizTitle = '';
       isPublic = true;
       terms = [{ id: 1, term: '', description: '' }];
       nextTermId = 2;
       
-      // Dispatch delete event
       dispatch('deleted');
     }
   }
