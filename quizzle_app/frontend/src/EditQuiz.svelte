@@ -100,7 +100,7 @@
       dispatch('updated',{_id:quizId,title:quizTitle,is_public:isPublic}); alert('Quiz updated successfully!');
     } catch(err){ console.error('update error:',err); alert('Failed to update quiz: '+(err as Error).message); }
   }
-  
+
   function handleCancel(){ dispatch('close'); }
 
   async function handleDelete() {
@@ -129,8 +129,6 @@
       alert('Failed to delete quiz: ' + (err as Error).message);
     }
   }
-
-
 </script>
 
 

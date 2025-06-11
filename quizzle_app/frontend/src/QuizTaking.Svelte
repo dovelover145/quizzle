@@ -48,8 +48,6 @@
     const allQuestions = dataAll.questions as Array<any>;
 
     const answerPool: string[] = [
-      "Banana",
-      "Apple",
       ...allQuestions.map(q => q.correct_answer)
     ];
     questions = thisQuizQuestions.map((q: any, idx: number) => {

@@ -21,6 +21,15 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./vitest-setup.js']
-  }
+    setupFiles: ['./vitest-setup.js'],
+    transformMode: {
+      ssr: [/\.svelte$/]
+    },
+    deps: { inline: [/svelte/] }
+  },
+  resolve: process.env.VITEST
+    ? {
+      conditions: ['browser']
+    }
+    : undefined
 }))
