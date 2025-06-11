@@ -516,4 +516,136 @@ function handleQuizUpdated() {
   .quizzes-section {
     margin-bottom: 3rem;
   }
+  
+  .quiz-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.edit-btn, .view-btn {
+  flex: 1;
+  padding: 0.625rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.edit-btn {
+  background: linear-gradient(135deg, #e8f4f6 0%, #d8eef1 100%);
+  color: #2c5f66;
+  border: 1px solid #c2e4e8;
+}
+
+.edit-btn:hover {
+  background: linear-gradient(135deg, #d8eef1 0%, #c2e4e8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(44, 95, 102, 0.15);
+  border-color: #a8d8dd;
+}
+
+.edit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(44, 95, 102, 0.2);
+}
+
+.view-btn {
+  background: linear-gradient(135deg, #e8f4f6 0%, #d8eef1 100%);
+  color: #2c5f66;
+  border: 1px solid #c2e4e8;
+}
+
+.view-btn:hover {
+  background: linear-gradient(135deg, #d8eef1 0%, #c2e4e8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(44, 95, 102, 0.15);
+  border-color: #a8d8dd;
+}
+
+.view-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(44, 95, 102, 0.4);
+}
+
+.edit-btn::before {
+  font-size: 0.75rem;
+}
+
+.view-btn::before {
+  font-size: 0.75rem;
+}
+
+.edit-btn.text-icon::before {
+  font-family: Arial, sans-serif;
+}
+
+.view-btn.text-icon::before {
+  content: "▶";
+  font-family: Arial, sans-serif;
+}
+
+.edit-btn::after, .view-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.edit-btn:active::after {
+  width: 120px;
+  height: 120px;
+}
+
+.view-btn:active::after {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.quiz-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.5rem;
+  min-width: 220px;
+  cursor: default; 
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  background: white;
+  position: relative;
+}
+
+.quiz-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(44, 95, 102, 0.1);
+  border-color: #c2e4e8;
+}
+
+@media (max-width: 768px) {
+  .quiz-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .edit-btn, .view-btn {
+    width: 100%;
+  }
+}
+  
 </style>
